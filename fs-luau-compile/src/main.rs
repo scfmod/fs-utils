@@ -2,10 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Result, bail};
 use argh::FromArgs;
-use fs_lib::{
-    LUAU_DECODE_TABLES, buffer::BufferExtension, byte_array_hex_string,
-    cmd::run_command_return_stdout,
-};
+use fs_lib::{LUAU_DECODE_TABLES, buffer::BufferExtension, cmd::run_command_return_stdout};
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Compile and encode Lua(u) file to valid bytecode file
