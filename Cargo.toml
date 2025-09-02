@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "fs-lib",
+    "fs-luajit-decompile",
+    "fs-luau-compile",
+    "fs-luau-decompile",
+    "fs-patch",
+    "fs-patch-process",
+    "fs-patch-scan",
+    "fs-shapes-unlock",
+    "fs-unpack",
+    "fs-unpack-dll",
+    "fs-xml-format"
+]
+resolver = "3"
+
+[profile.release]
+strip = true
+codegen-units = 1
+panic = "abort"
+#opt-level = "z"

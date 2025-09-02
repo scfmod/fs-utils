@@ -1,0 +1,10 @@
+[package]
+name = "fs-patch-scan"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+argh = "0.1.13"
+fs-lib = { version = "1.0.0", path = "../fs-lib" }
+goblin = { version = "0.10.1", default-features = false, features = ["alloc", "pe64"] }

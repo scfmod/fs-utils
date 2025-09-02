@@ -1,0 +1,10 @@
+[package]
+name = "fs-unpack"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+argh = "0.1.13"
+winapi = { version = "0.3", features = ["libloaderapi"] }
+fs-lib = { version = "1.0.0", path = "../fs-lib" }
