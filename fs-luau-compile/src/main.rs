@@ -27,7 +27,6 @@ fn main() -> Result<()> {
         ["--binary", &cli.input.as_path().to_str().unwrap()],
     )?;
 
-    println!("bytes: {}", byte_array_hex_string(&compiled_buffer[0..4]));
     let version = compiled_buffer[0];
 
     let Some(table) = LUAU_DECODE_TABLES.get(&(version, false)) else {
