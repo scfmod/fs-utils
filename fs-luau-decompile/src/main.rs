@@ -48,7 +48,7 @@ pub struct Cmd {
 // (version, is_encoded, is_dlc)
 fn get_version(buffer: &Vec<u8>) -> (u8, bool, bool) {
     match &buffer[0..3] {
-        [0x03, 0x00, 0xF2] => (3, true, true),
+        [0x03, 0x00, 0xF2] => (6, true, true),
         [0x02, 0xEF, ..] => (3, true, false),
         [0x03, 0xFD, ..] => (3, true, true),
         [0x02, 0xF0, ..] => (4, true, false),
