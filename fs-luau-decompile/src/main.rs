@@ -4,6 +4,10 @@ use fs_lib::{
     LUAU_DECODE_TABLES, buffer::BufferExtension, cmd::run_command_return_stdout,
     list_files_with_extension, path::PathExtension,
 };
+use rayon::{
+    ThreadPoolBuilder,
+    iter::{IntoParallelIterator, ParallelIterator},
+};
 use std::path::{Path, PathBuf};
 
 use crate::luau::{
@@ -35,6 +39,10 @@ pub struct Cmd {
     /// include symbol table
     #[argh(switch, short = 't')]
     enable_symbol_table: bool,
+
+    /// set thread pool size when processing folders (0 = auto)
+    #[argh(option, default = "0")]
+    num_threads: u8,
 
     /// path to input file/folder
     #[argh(positional)]
@@ -105,6 +113,20 @@ fn decompile<P: AsRef<Path>>(file: P, output_file: P, opts: &DecompileOptions) -
     Ok(output_file)
 }
 
+fn decompile_file(
+    file: &PathBuf,
+    input_path: &PathBuf,
+    output_path: &PathBuf,
+    opts: &DecompileOptions,
+) -> Result<PathBuf> {
+    let output_file: PathBuf = file
+        .convert_relative_path(&input_path, &output_path)?
+        .components()
+        .collect();
+
+    decompile(&file, &&output_file, &opts)
+}
+
 fn main() -> Result<()> {
     let cli: Cmd = argh::from_env();
 
@@ -121,29 +143,31 @@ fn main() -> Result<()> {
             bail!("Output path is a file")
         }
 
+        ThreadPoolBuilder::new()
+            .num_threads(cli.num_threads.into())
+            .build_global()
+            .unwrap();
+
         let files = list_files_with_extension(&cli.input, r"l64", cli.recursive)?;
 
-        for file in files.iter() {
-            // Decompiler will end up in an endless loop trying to decompile this specific file.
-            if file.file_name().unwrap() == "XMLSchema.l64" {
-                continue;
-            }
-
-            let output_file: PathBuf = file
-                .convert_relative_path(&cli.input, &output_path)?
-                .components()
-                .collect();
-
-            let output_file = decompile(&file, &&output_file, &opts)?;
-
-            if !cli.silent {
-                if output_file != *file {
-                    println!("{} -> {}", file.display(), output_file.display());
-                } else {
-                    println!("{}", file.display());
+        files.into_par_iter().for_each(|file| {
+            if file.file_name().unwrap() != "XMLSchema.l64" {
+                match decompile_file(&file, &cli.input, &output_path, &opts) {
+                    Err(e) => {
+                        println!("Error decompiling '{}': {}", file.display(), e);
+                    }
+                    Ok(output_file) => {
+                        if !cli.silent {
+                            if output_file != *file {
+                                println!("{} -> {}", file.display(), output_file.display());
+                            } else {
+                                println!("{}", file.display());
+                            }
+                        }
+                    }
                 }
             }
-        }
+        });
     } else {
         let output_file: PathBuf = cli
             .output
@@ -154,7 +178,11 @@ fn main() -> Result<()> {
         let output_file = decompile(&cli.input, &output_file, &opts)?;
 
         if !cli.silent {
-            println!("{}", output_file.display());
+            if output_file != *cli.input {
+                println!("{} -> {}", cli.input.display(), output_file.display());
+            } else {
+                println!("{}", cli.input.display());
+            }
         }
     }
 
