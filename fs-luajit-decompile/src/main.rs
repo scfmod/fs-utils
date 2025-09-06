@@ -5,6 +5,8 @@ use fs_lib::{
     LUAJIT_DECODE_TABLES, buffer::BufferExtension, cmd::run_command_return_stdout,
     list_files_with_extension,
 };
+use rayon::ThreadPoolBuilder;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::path::{Path, PathBuf};
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -17,6 +19,10 @@ pub struct Cmd {
     /// suppress output
     #[argh(switch, short = 's')]
     silent: bool,
+
+    /// set thread pool size when processing folders (0 = auto)
+    #[argh(option, default = "0")]
+    num_threads: u8,
 
     /// path to input file/folder
     #[argh(positional)]
@@ -70,6 +76,15 @@ fn decompile<P: AsRef<Path>>(file: P, output_file: P) -> Result<PathBuf> {
     Ok(output_file)
 }
 
+fn decompile_file(file: &PathBuf, input_path: &PathBuf, output_path: &PathBuf) -> Result<PathBuf> {
+    let output_file: PathBuf = file
+        .convert_relative_path(&input_path, &output_path)?
+        .components()
+        .collect();
+
+    decompile(&file, &&output_file)
+}
+
 fn main() -> Result<()> {
     let cli: Cmd = argh::from_env();
 
@@ -80,24 +95,29 @@ fn main() -> Result<()> {
             bail!("Output path is a file")
         }
 
+        ThreadPoolBuilder::new()
+            .num_threads(cli.num_threads.into())
+            .build_global()
+            .unwrap();
+
         let files = list_files_with_extension(&cli.input, r"l64", cli.recursive)?;
 
-        for file in files.iter() {
-            let output_file: PathBuf = file
-                .convert_relative_path(&cli.input, &output_path)?
-                .components()
-                .collect();
-
-            let output_file = decompile(&file, &&output_file)?;
-
-            if !cli.silent {
-                if output_file != *file {
-                    println!("{} -> {}", file.display(), output_file.display());
-                } else {
-                    println!("{}", file.display());
+        files.into_par_iter().for_each(|file| {
+            match decompile_file(&file, &cli.input, &output_path) {
+                Err(e) => {
+                    println!("Error decompiling '{}': {}", file.display(), e);
+                }
+                Ok(output_file) => {
+                    if !cli.silent {
+                        if output_file != *file {
+                            println!("{} -> {}", file.display(), output_file.display());
+                        } else {
+                            println!("{}", file.display());
+                        }
+                    }
                 }
             }
-        }
+        });
     } else {
         let output_file: PathBuf = cli
             .output

@@ -144,6 +144,7 @@ dependencies = [
  "anyhow",
  "argh",
  "fs-lib",
+ "rayon",
 ]
 
 [[package]]
