@@ -76,15 +76,6 @@ fn decompile<P: AsRef<Path>>(file: P, output_file: P) -> Result<PathBuf> {
     Ok(output_file)
 }
 
-fn decompile_file(file: &PathBuf, input_path: &PathBuf, output_path: &PathBuf) -> Result<PathBuf> {
-    let output_file: PathBuf = file
-        .convert_relative_path(&input_path, &output_path)?
-        .components()
-        .collect();
-
-    decompile(&file, &&output_file)
-}
-
 fn main() -> Result<()> {
     let cli: Cmd = argh::from_env();
 
@@ -102,22 +93,26 @@ fn main() -> Result<()> {
 
         let files = list_files_with_extension(&cli.input, r"l64", cli.recursive)?;
 
-        files.into_par_iter().for_each(|file| {
-            match decompile_file(&file, &cli.input, &output_path) {
-                Err(e) => {
-                    println!("Error decompiling '{}': {}", file.display(), e);
-                }
-                Ok(output_file) => {
-                    if !cli.silent {
-                        if output_file != *file {
-                            println!("{} -> {}", file.display(), output_file.display());
-                        } else {
-                            println!("{}", file.display());
-                        }
-                    }
+        let iter_result = files.into_par_iter().try_for_each(|file| -> Result<()> {
+            let output_file: PathBuf = file
+                .convert_relative_path(&cli.input, &output_path)?
+                .components()
+                .collect();
+
+            let output_file = decompile(&file, &output_file)?;
+
+            if !cli.silent {
+                if output_file != *file {
+                    println!("{} -> {}", file.display(), output_file.display());
+                } else {
+                    println!("{}", file.display());
                 }
             }
+
+            Ok(())
         });
+
+        return iter_result;
     } else {
         let output_file: PathBuf = cli
             .output
