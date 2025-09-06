@@ -12,7 +12,7 @@ cargo build --release -p fs-luajit-decompile
 ## fs-luau-decompile
 Decode and decompile Luau bytecode files (FS25). Using medal decompiler.
 ```sh
-cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [-l] [-t]
+cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [-l] [-t] [--num-threads <n>]
 ```
 ```sh
 cargo build --release -p fs-luau-decompile
