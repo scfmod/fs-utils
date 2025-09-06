@@ -243,13 +243,6 @@ lazy_static::lazy_static! {
             mask: 0x0f,
         });
 
-        // Table for encoding self-compiled scripts
-        entries.insert((4, false), ByteshiftTable {
-            bytes: vec![0x02, 0x13, 0x0A, 0x08, 0x01, 0x07, 0x02, 0x02],
-            offset: 0,
-            mask: 0x07,
-        });
-
         entries
     };
 }
