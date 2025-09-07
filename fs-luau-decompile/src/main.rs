@@ -137,18 +137,20 @@ fn main() -> Result<()> {
         let files = list_files_with_extension(&cli.input, r"l64", cli.recursive)?;
 
         let iter_result = files.into_par_iter().try_for_each(|file| -> Result<()> {
-            let output_file: PathBuf = file
-                .convert_relative_path(&cli.input, &output_path)?
-                .components()
-                .collect();
+            if file.file_name().unwrap() != "XMLSchema.l64" {
+                let output_file: PathBuf = file
+                    .convert_relative_path(&cli.input, &output_path)?
+                    .components()
+                    .collect();
 
-            let output_file = decompile(&file, &output_file, &opts)?;
+                let output_file = decompile(&file, &output_file, &opts)?;
 
-            if !cli.silent {
-                if output_file != *file {
-                    println!("{} -> {}", file.display(), output_file.display());
-                } else {
-                    println!("{}", file.display());
+                if !cli.silent {
+                    if output_file != *file {
+                        println!("{} -> {}", file.display(), output_file.display());
+                    } else {
+                        println!("{}", file.display());
+                    }
                 }
             }
 
