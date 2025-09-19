@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::{Result, bail};
 use argh::FromArgs;
-use biodivine_xml_doc::{Document, WriteOptions};
+use biodivine_xml_doc::{Document, ReadOptions, WriteOptions};
 use fs_lib::{list_files_with_extension, path::PathExtension};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -61,7 +61,12 @@ fn format_xml_file<P: AsRef<Path>>(
     indent_char: &Indent,
     indent_size: u8,
 ) -> Result<()> {
-    let doc = Document::parse_file(file)?;
+    let read_opts = ReadOptions {
+        require_decl: false,
+        ..Default::default()
+    };
+
+    let doc = Document::parse_file_with_opts(file, read_opts)?;
     let mut path = output_file.as_ref().to_path_buf();
 
     path.pop();
