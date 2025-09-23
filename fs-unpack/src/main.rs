@@ -36,12 +36,12 @@ type DefarmFn = unsafe extern "C" fn(
 type DecryptFn = dyn Fn(&Vec<u8>, &[u32; 4]) -> Result<Vec<u8>>;
 
 fn find_keys(file: &mut File, decrypt_fn: &DecryptFn) -> Result<[u32; 4]> {
-    let test_bytes = file.read_bytes(112, 8)?;
+    let test_bytes = file.read_bytes(512, 8)?;
 
     for keys in KEYS_LIST.iter() {
         let result = decrypt_fn(&test_bytes, &keys)?;
 
-        if result.read_u32(0) == 0 {
+        if result.read_u32(0) == 1 {
             return Ok(keys.clone());
         }
     }
