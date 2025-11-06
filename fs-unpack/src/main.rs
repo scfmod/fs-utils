@@ -136,10 +136,10 @@ File count: {}",
 
         let file_xsize = header.read_u32(offset + 8);
         let file_size = header.read_u32(offset + 16);
-        let file_offset = header.read_u32(offset + 24);
+        let file_offset = header.read_u64(offset + 24);
         let file_name = header.read_cstring(offset + 40)?;
 
-        let cipher_bytes = file.read_bytes(file_offset as usize, file_xsize as usize)?;
+        let cipher_bytes = file.read_bytes(file_offset, file_xsize as usize)?;
         let deciphered_bytes = decrypt(&cipher_bytes, &keys)?;
         let file_bytes = deciphered_bytes[0..file_size as usize].to_vec();
 
