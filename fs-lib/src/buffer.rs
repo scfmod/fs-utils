@@ -13,6 +13,7 @@ pub trait BufferExtension {
     fn read_u8(&self, offset: usize) -> u8;
     fn read_u16(&self, offset: usize) -> u16;
     fn read_u32(&self, offset: usize) -> u32;
+    fn read_u64(&self, offset: usize) -> u64;
     fn read_string(&self, offset: usize, length: usize) -> Result<String>;
     fn read_cstring(&self, offset: usize) -> Result<String>;
 
@@ -58,6 +59,19 @@ impl BufferExtension for Vec<u8> {
             self[offset + 1],
             self[offset + 2],
             self[offset + 3],
+        ])
+    }
+
+    fn read_u64(&self, offset: usize) -> u64 {
+        u64::from_le_bytes([
+            self[offset],
+            self[offset + 1],
+            self[offset + 2],
+            self[offset + 3],
+            self[offset + 4],
+            self[offset + 5],
+            self[offset + 6],
+            self[offset + 7],
         ])
     }
 
