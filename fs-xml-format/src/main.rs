@@ -1,13 +1,15 @@
 use std::{
-    fs::create_dir_all,
+    fs::File,
+    io::BufWriter,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use anyhow::{Result, bail};
 use argh::FromArgs;
-use biodivine_xml_doc::{Document, ReadOptions, WriteOptions};
-use fs_lib::{list_files_with_extension, path::PathExtension};
+use fs_lib::{buffer::BufferExtension, list_files_with_extension, path::PathExtension};
+use xml::ParserConfig;
+use xml::writer::EmitterConfig;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum Indent {
@@ -46,6 +48,10 @@ pub struct Cmd {
     #[argh(option, short = 'i', default = "4")]
     indent_size: u8,
 
+    /// disable escape characters in attributes
+    #[argh(switch, short = 'e')]
+    disable_escape_characters: bool,
+
     /// path to input file/folder
     #[argh(positional)]
     input: PathBuf,
@@ -55,33 +61,76 @@ pub struct Cmd {
     output: Option<PathBuf>,
 }
 
+fn create_indent_string(indent_type: &Indent, indent_size: u8) -> String {
+    let indent_char = match indent_type {
+        Indent::Space => ' ',
+        Indent::Tab => '\t',
+    };
+
+    indent_char.to_string().repeat(indent_size as usize)
+}
+
 fn format_xml_file<P: AsRef<Path>>(
     file: P,
     output_file: P,
     indent_char: &Indent,
     indent_size: u8,
+    escape_characters: bool,
 ) -> Result<()> {
-    let read_opts = ReadOptions {
-        require_decl: false,
-        ..Default::default()
-    };
+    let buffer: Vec<u8> = Vec::read_from_file(&file)?;
+    let input: &[u8] = &buffer;
 
-    let doc = Document::parse_file_with_opts(file, read_opts)?;
-    let mut path = output_file.as_ref().to_path_buf();
+    let mut reader = ParserConfig::default()
+        .ignore_root_level_whitespace(true)
+        .ignore_comments(false)
+        .cdata_to_characters(false)
+        .coalesce_characters(false)
+        .create_reader(input);
 
-    path.pop();
+    let output = File::create(output_file)?;
+    let writer = BufWriter::new(output);
 
-    if !path.exists() {
-        create_dir_all(path)?;
+    let mut config = EmitterConfig::new()
+        .perform_indent(true)
+        .indent_string(create_indent_string(&indent_char, indent_size))
+        .write_document_declaration(true);
+
+    config.perform_escaping = escape_characters;
+
+    let mut emitter = config.create_writer(writer);
+
+    loop {
+        let reader_event = reader.next()?;
+
+        match reader_event {
+            xml::reader::XmlEvent::EndDocument => break,
+            xml::reader::XmlEvent::StartElement {
+                name,
+                attributes,
+                namespace,
+            } => {
+                let event = xml::writer::XmlEvent::StartElement {
+                    name: name.borrow(),
+                    namespace: namespace.borrow(),
+                    attributes: attributes.iter().map(|attr| attr.borrow()).collect(),
+                };
+                emitter.write(event)?;
+            }
+            xml::reader::XmlEvent::Characters(text) => {
+                let event = xml::writer::XmlEvent::Characters(&text);
+                emitter.write(event)?;
+            }
+            xml::reader::XmlEvent::Comment(text) => {
+                let event = xml::writer::XmlEvent::Comment(&text);
+                emitter.write(event)?;
+            }
+            other => {
+                if let Some(writer_event) = other.as_writer_event() {
+                    emitter.write(writer_event)?;
+                }
+            }
+        }
     }
-
-    let opts = WriteOptions {
-        indent_char: *indent_char as u8,
-        indent_size: indent_size as usize,
-        write_decl: true,
-    };
-
-    doc.write_file_with_opts(output_file, opts)?;
 
     Ok(())
 }
@@ -112,7 +161,13 @@ fn main() -> Result<()> {
                 }
             }
 
-            format_xml_file(&file, &&output_file, &cli.indent_char, cli.indent_size)?;
+            format_xml_file(
+                &file,
+                &&output_file,
+                &cli.indent_char,
+                cli.indent_size,
+                !cli.disable_escape_characters,
+            )?;
         }
     } else {
         let output: PathBuf = cli
@@ -121,7 +176,13 @@ fn main() -> Result<()> {
             .components()
             .collect();
 
-        format_xml_file(&cli.input, &output, &cli.indent_char, cli.indent_size)?;
+        format_xml_file(
+            &cli.input,
+            &output,
+            &cli.indent_char,
+            cli.indent_size,
+            !cli.disable_escape_characters,
+        )?;
 
         if !cli.silent {
             println!("{}", output.display());

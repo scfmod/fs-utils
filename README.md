@@ -48,7 +48,7 @@ cargo build --release -p fs-unpack-dll
 ## fs-xml-format
 Parse XML files and output sane formatted XML.
 ```sh
-cargo run -p fs-xml-format -- <input> [<output>] [-r] [-s] [-c <indent-char>] [-i <indent-size>]
+cargo run -p fs-xml-format -- <input> [<output>] [-r] [-s] [-e] [-c <indent-char>] [-i <indent-size>]
 ```
 ```sh
 cargo build --release -p fs-xml-format
