@@ -41,7 +41,7 @@ fn unlock_shapes_file<P: AsRef<Path>>(file: P, output_file: P) -> Result<()> {
 
 fn is_locked(buffer: &Vec<u8>) -> Result<bool> {
     match buffer[0] {
-        0x05 | 0x07 | 0x0A => Ok(buffer[1] != 0 || buffer[3] != 0),
+        0x05 | 0x06 | 0x07 | 0x09 | 0x0A => Ok(buffer[1] != 0 || buffer[3] != 0),
         0x00 | 0x01 => Ok(buffer[2] != 0),
         _ => bail!("Unknown format"),
     }
@@ -49,7 +49,7 @@ fn is_locked(buffer: &Vec<u8>) -> Result<bool> {
 
 fn unlock(buffer: &mut Vec<u8>) -> Result<()> {
     match buffer[0] {
-        0x05 | 0x07 | 0x0A => {
+        0x05 | 0x06 | 0x07 | 0x09 | 0x0A => {
             // FS22, FS25 (0x0A)
             buffer[1] = 0;
             buffer[2] = buffer[2].wrapping_sub(0x0D);
