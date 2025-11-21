@@ -50,7 +50,7 @@ fn is_locked(buffer: &Vec<u8>) -> Result<bool> {
 fn unlock(buffer: &mut Vec<u8>) -> Result<()> {
     match buffer[0] {
         0x05 | 0x06 | 0x07 | 0x09 | 0x0A => {
-            // FS22, FS25 (0x0A)
+            // FS22, FS25 (0x0A, 0x06, 0x09)
             buffer[1] = 0;
             buffer[2] = buffer[2].wrapping_sub(0x0D);
             buffer[3] = 0;
