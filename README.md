@@ -18,6 +18,23 @@ cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [-l] [-t] [-
 cargo build --release -p fs-luau-decompile
 ```
 
+### Platform Support
+- **Windows**: Uses `bin/luau-lifter.exe`
+- **Mac/Linux**: Uses `bin/luau-lifter` (compile medal from https://github.com/src-tauri/medal)
+
+The binary is searched in this order:
+1. `LUAU_LIFTER_PATH` environment variable (if set)
+2. Same directory as the executable
+3. `bin/` subdirectory
+
+To build medal for Mac:
+```sh
+git clone https://github.com/src-tauri/medal
+cd medal
+cargo +nightly build --release --bin luau-lifter
+cp target/release/luau-lifter /path/to/fs-utils/bin/
+```
+
 ## fs-shapes-unlock
 Unlock .i3d.shapes files.
 ```sh
