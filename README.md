@@ -20,7 +20,7 @@ cargo build --release -p fs-luau-decompile
 
 ### Platform Support
 - **Windows**: Uses `bin/luau-lifter.exe`
-- **Mac/Linux**: Uses `bin/luau-lifter` (compile medal from https://github.com/src-tauri/medal)
+- **Mac/Linux**: Uses `bin/luau-lifter` (compile medal from [https://github.com/scfmod/medal](https://github.com/scfmod/medal)
 
 The binary is searched in this order:
 1. `LUAU_LIFTER_PATH` environment variable (if set)
