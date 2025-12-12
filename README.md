@@ -29,7 +29,7 @@ The binary is searched in this order:
 
 To build medal for Mac:
 ```sh
-git clone https://github.com/src-tauri/medal
+git clone https://github.com/scfmod/medal
 cd medal
 cargo +nightly build --release --bin luau-lifter
 cp target/release/luau-lifter /path/to/fs-utils/bin/
