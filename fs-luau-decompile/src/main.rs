@@ -1,7 +1,7 @@
 use anyhow::{Result, bail};
 use argh::FromArgs;
 use fs_lib::{
-    LUAU_DECODE_TABLES, buffer::BufferExtension, cmd::run_command_return_stdout,
+    LUAU_DECODE_TABLES, buffer::BufferExtension, cmd::{run_command_absolute, find_luau_lifter},
     list_files_with_extension, path::PathExtension,
 };
 use rayon::{
@@ -96,7 +96,12 @@ fn decompile<P: AsRef<Path>>(file: P, output_file: P, opts: &DecompileOptions) -
         bytecode.write_to_file(&file)?;
     }
 
-    let mut result = run_command_return_stdout("luau-lifter.exe", [&file.as_ref()])?;
+    // Find and run luau-lifter with encode_key=1 for decoded FS25 bytecode
+    let lifter_path = find_luau_lifter()?;
+    let mut result = run_command_absolute(
+        &lifter_path,
+        [file.as_ref().as_os_str(), std::ffi::OsStr::new("1")]
+    )?;
 
     let (main, prototypes, symbol_table) = parse_bytecode_info(&bytecode)?;
 
