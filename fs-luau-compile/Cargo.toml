@@ -7,3 +7,5 @@ edition = "2024"
 anyhow = "1.0.99"
 argh = "0.1.13"
 fs-lib = { version = "1.0.0", path = "../fs-lib" }
+mlua = { version = "0.10", features = ["luau"] }
+walkdir = "2"
