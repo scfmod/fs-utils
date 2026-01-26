@@ -6,7 +6,6 @@ members = [
     "fs-luau-decompile",
     "fs-patch",
     "fs-patch-process",
-    "fs-patch-scan",
     "fs-shapes-unlock",
     "fs-unpack",
     "fs-unpack-dll",
