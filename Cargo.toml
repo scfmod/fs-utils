@@ -12,6 +12,8 @@ members = [
     "fs-unpack-dll",
     "fs-xml-format"
 ]
+exclude = ["medal"]
+
 resolver = "3"
 
 [profile.release]
