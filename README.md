@@ -42,21 +42,12 @@ cargo build --release -p fs-shapes-unlock
 ```
 
 ## fs-unpack
-Unpack archive using ``defarm.dll``. Only compiling and running 32-bit version works.
+Extract GAR/DLC archives. Cross-platform, no external dependencies.
 ```sh
-cargo run -p fs-unpack --target i686-pc-windows-msvc -- <input_file> <output_path>
+cargo run -p fs-unpack -- <archive> <output_path> [-s]
 ```
 ```sh
-cargo build --release -p fs-unpack --target i686-pc-windows-msvc
-```
-
-## fs-unpack-dll
-Extract ``defarm.dll`` from QuickBMS script file.
-```sh
-cargo run -p fs-unpack-dll -- <input_file> [<output_path>]
-```
-```sh
-cargo build --release -p fs-unpack-dll
+cargo build --release -p fs-unpack
 ```
 
 ## fs-xml-format

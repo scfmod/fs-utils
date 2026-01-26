@@ -7,6 +7,5 @@ edition = "2024"
 anyhow = "1.0.99"
 argh = "0.1.13"
 fs-lib = { version = "1.0.0", path = "../fs-lib" }
-
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["libloaderapi"] }
+gar-lib = { git = "https://github.com/Paint-a-Farm/gar-lib.git" }
+rayon = "1.11.0"

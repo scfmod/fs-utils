@@ -524,7 +524,8 @@ dependencies = [
  "anyhow",
  "argh",
  "fs-lib",
- "winapi",
+ "gar-lib",
+ "rayon",
 ]
 
 [[package]]
