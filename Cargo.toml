@@ -8,7 +8,6 @@ members = [
     "fs-patch-process",
     "fs-shapes-unlock",
     "fs-unpack",
-    "fs-unpack-dll",
     "fs-xml-format"
 ]
 exclude = ["medal"]
