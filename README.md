@@ -10,29 +10,26 @@ cargo build --release -p fs-luajit-decompile
 ```
 
 ## fs-luau-decompile
-Decode and decompile Luau bytecode files (FS25). Using medal decompiler.
+Decode and decompile Luau bytecode files (FS25). Embeds the [medal](https://github.com/scfmod/medal) decompiler.
+
+Supports reading directly from GAR/DLC archives:
 ```sh
-cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [-l] [-t] [--num-threads <n>]
+# Single file from archive
+fs-luau-decompile dataS.gar/scripts/main.l64
+
+# Directory inside archive
+fs-luau-decompile -r dataS.gar/scripts/vehicles/ -o ./output/
+
+# Entire archive
+fs-luau-decompile -r dataS.gar -o ./output/
 ```
+
+```sh
+cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [--num-threads <n>]
+```
+
 ```sh
 cargo build --release -p fs-luau-decompile
-```
-
-### Platform Support
-- **Windows**: Uses `bin/luau-lifter.exe`
-- **Mac/Linux**: Uses `bin/luau-lifter` (compile medal from [https://github.com/scfmod/medal](https://github.com/scfmod/medal)
-
-The binary is searched in this order:
-1. `LUAU_LIFTER_PATH` environment variable (if set)
-2. Same directory as the executable
-3. `bin/` subdirectory
-
-To build medal for Mac:
-```sh
-git clone https://github.com/scfmod/medal
-cd medal
-cargo +nightly build --release --bin luau-lifter
-cp target/release/luau-lifter /path/to/fs-utils/bin/
 ```
 
 ## fs-shapes-unlock
@@ -45,21 +42,12 @@ cargo build --release -p fs-shapes-unlock
 ```
 
 ## fs-unpack
-Unpack archive using ``defarm.dll``. Only compiling and running 32-bit version works.
+Extract GAR/DLC archives. Cross-platform, no external dependencies.
 ```sh
-cargo run -p fs-unpack --target i686-pc-windows-msvc -- <input_file> <output_path>
+cargo run -p fs-unpack -- <archive> <output_path> [-s]
 ```
 ```sh
-cargo build --release -p fs-unpack --target i686-pc-windows-msvc
-```
-
-## fs-unpack-dll
-Extract ``defarm.dll`` from QuickBMS script file.
-```sh
-cargo run -p fs-unpack-dll -- <input_file> [<output_path>]
-```
-```sh
-cargo build --release -p fs-unpack-dll
+cargo build --release -p fs-unpack
 ```
 
 ## fs-xml-format
