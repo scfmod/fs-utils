@@ -1,21 +1,13 @@
 use anyhow::{Result, bail};
 use argh::FromArgs;
 use fs_lib::{
-    LUAU_DECODE_TABLES, buffer::BufferExtension, cmd::{run_command_absolute, find_luau_lifter},
-    list_files_with_extension, path::PathExtension,
+    LUAU_DECODE_TABLES, buffer::BufferExtension, list_files_with_extension, path::PathExtension,
 };
 use rayon::{
     ThreadPoolBuilder,
     iter::{IntoParallelIterator, ParallelIterator},
 };
 use std::path::{Path, PathBuf};
-
-use crate::luau::{
-    DecompileOptions,
-    util::{format_luau_buffer, parse_bytecode_info},
-};
-
-mod luau;
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Decode and decompile Luau .l64 bytecode files
@@ -28,17 +20,9 @@ pub struct Cmd {
     #[argh(switch, short = 's')]
     silent: bool,
 
-    /// do not include local values and upvalues
+    /// only decode files
     #[argh(switch, short = 'd')]
-    disable_formatting: bool,
-
-    /// include line number for functions when applicable
-    #[argh(switch, short = 'l')]
-    enable_line_numbers: bool,
-
-    /// include symbol table
-    #[argh(switch, short = 't')]
-    enable_symbol_table: bool,
+    decode_only: bool,
 
     /// set thread pool size when processing folders (0 = auto)
     #[argh(option, default = "0")]
@@ -54,7 +38,7 @@ pub struct Cmd {
 }
 
 // (version, is_encoded, is_dlc)
-fn get_version(buffer: &Vec<u8>) -> (u8, bool, bool) {
+fn get_bytecode_info(buffer: &Vec<u8>) -> (u8, bool, bool) {
     match &buffer[0..3] {
         [0x03, 0x00, 0xF2] => (6, true, true),
         [0x02, 0xEF, ..] => (3, true, false),
@@ -68,7 +52,7 @@ fn get_version(buffer: &Vec<u8>) -> (u8, bool, bool) {
     }
 }
 
-fn decode(buffer: &mut Vec<u8>, version: u8, is_dlc: bool) -> Result<()> {
+fn decode_bytecode(buffer: &mut Vec<u8>, version: u8, is_dlc: bool) -> Result<()> {
     let Some(table) = LUAU_DECODE_TABLES.get(&(version, is_dlc)) else {
         bail!("Unable to decode, no valid byteshift table found")
     };
@@ -79,55 +63,78 @@ fn decode(buffer: &mut Vec<u8>, version: u8, is_dlc: bool) -> Result<()> {
     Ok(())
 }
 
-fn decompile<P: AsRef<Path>>(file: P, output_file: P, opts: &DecompileOptions) -> Result<PathBuf> {
-    let mut bytecode = Vec::read_from_file(&file)?;
-
-    let (version, is_encoded, is_dlc) = get_version(&bytecode);
+fn decompile_bytecode(bytecode: &mut Vec<u8>) -> Result<Vec<u8>> {
+    let (version, is_encoded, is_dlc) = get_bytecode_info(&bytecode);
 
     if version == 0 {
-        bail!(
-            "Unsupported/unknown bytecode file: {}",
-            file.as_ref().display()
-        );
+        bail!("Unsupported/unknown bytecode");
     }
 
     if is_encoded {
-        decode(&mut bytecode, version, is_dlc)?;
-        bytecode.write_to_file(&file)?;
+        decode_bytecode(bytecode, version, is_dlc)?;
     }
 
-    // Find and run luau-lifter with encode_key=1 for decoded FS25 bytecode
-    let lifter_path = find_luau_lifter()?;
-    let mut result = run_command_absolute(
-        &lifter_path,
-        [file.as_ref().as_os_str(), std::ffi::OsStr::new("1")]
-    )?;
+    Ok(luau_lifter::decompile_bytecode(&bytecode, 1)
+        .as_bytes()
+        .to_vec())
+}
 
-    let (main, prototypes, symbol_table) = parse_bytecode_info(&bytecode)?;
+fn decompile_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>> {
+    let mut bytecode = Vec::read_from_file(&file)?;
 
-    format_luau_buffer(&mut result, main, &prototypes, &symbol_table, &opts)?;
+    match decompile_bytecode(&mut bytecode) {
+        Ok(result) => Ok(result),
+        Err(e) => bail!("{}: {}", file.as_ref().display(), e),
+    }
+}
 
-    let mut output_file: PathBuf = output_file.as_ref().to_path_buf();
+fn decode_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>> {
+    let mut bytecode = Vec::read_from_file(&file)?;
 
-    if output_file.extension().unwrap() == "l64" {
-        output_file.set_extension("lua");
+    let (version, is_encoded, is_dlc) = get_bytecode_info(&bytecode);
+
+    if version == 0 {
+        bail!("Unsupported/unknown bytecode");
     }
 
-    result.write_to_file(&output_file)?;
+    if is_encoded {
+        decode_bytecode(&mut bytecode, version, is_dlc)?;
+    }
 
-    Ok(output_file)
+    Ok(bytecode)
 }
 
 fn main() -> Result<()> {
     let cli: Cmd = argh::from_env();
 
-    let opts = DecompileOptions {
-        use_symbol_table: cli.enable_symbol_table,
-        use_line_numbers: cli.enable_line_numbers,
-        use_variables: !cli.disable_formatting,
-    };
+    if cli.input.is_file() {
+        let mut output_file: PathBuf = cli
+            .output
+            .unwrap_or(cli.input.clone())
+            .components()
+            .collect();
 
-    if cli.input.is_dir() {
+        let result = match cli.decode_only {
+            false => {
+                if output_file.extension().unwrap() == "l64" {
+                    output_file.set_extension("lua");
+                }
+
+                decompile_file(&cli.input)?
+            }
+            true => decode_file(&cli.input)?,
+        };
+
+        result.write_to_file(&output_file)?;
+
+        if !cli.silent {
+            if output_file != *cli.input {
+                println!("{} -> {}", cli.input.display(), output_file.display());
+            } else {
+                println!("{}", cli.input.display());
+            }
+        }
+    } else if cli.input.is_dir() {
         let output_path = cli.output.unwrap_or_else(|| cli.input.clone());
 
         if output_path.is_file() {
@@ -142,20 +149,29 @@ fn main() -> Result<()> {
         let files = list_files_with_extension(&cli.input, r"l64", cli.recursive)?;
 
         let iter_result = files.into_par_iter().try_for_each(|file| -> Result<()> {
-            if file.file_name().unwrap() != "XMLSchema.l64" {
-                let output_file: PathBuf = file
-                    .convert_relative_path(&cli.input, &output_path)?
-                    .components()
-                    .collect();
+            let mut output_file: PathBuf = file
+                .convert_relative_path(&cli.input, &output_path)?
+                .components()
+                .collect();
 
-                let output_file = decompile(&file, &output_file, &opts)?;
-
-                if !cli.silent {
-                    if output_file != *file {
-                        println!("{} -> {}", file.display(), output_file.display());
-                    } else {
-                        println!("{}", file.display());
+            let result = match cli.decode_only {
+                false => {
+                    if output_file.extension().unwrap() == "l64" {
+                        output_file.set_extension("lua");
                     }
+
+                    decompile_file(&file)?
+                }
+                true => decode_file(&file)?,
+            };
+
+            result.write_to_file(&output_file)?;
+
+            if !cli.silent {
+                if output_file != *file {
+                    println!("{} -> {}", file.display(), output_file.display());
+                } else {
+                    println!("{}", file.display());
                 }
             }
 
@@ -163,22 +179,6 @@ fn main() -> Result<()> {
         });
 
         return iter_result;
-    } else {
-        let output_file: PathBuf = cli
-            .output
-            .unwrap_or(cli.input.clone())
-            .components()
-            .collect();
-
-        let output_file = decompile(&cli.input, &output_file, &opts)?;
-
-        if !cli.silent {
-            if output_file != *cli.input {
-                println!("{} -> {}", cli.input.display(), output_file.display());
-            } else {
-                println!("{}", cli.input.display());
-            }
-        }
     }
 
     Ok(())
