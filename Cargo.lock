@@ -150,6 +150,7 @@ checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 [[package]]
 name = "ast"
 version = "0.1.0"
+source = "git+https://github.com/scfmod/medal.git#ab6f83155ec030063df351a36256ffcee100274c"
 dependencies = [
  "array_tool",
  "by_address",
@@ -229,6 +230,7 @@ dependencies = [
 [[package]]
 name = "cfg"
 version = "0.1.0"
+source = "git+https://github.com/scfmod/medal.git#ab6f83155ec030063df351a36256ffcee100274c"
 dependencies = [
  "array_tool",
  "ast",
@@ -709,6 +711,7 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 [[package]]
 name = "luau-lifter"
 version = "0.1.0"
+source = "git+https://github.com/scfmod/medal.git#ab6f83155ec030063df351a36256ffcee100274c"
 dependencies = [
  "anyhow",
  "ast",
@@ -1023,6 +1026,7 @@ checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 [[package]]
 name = "restructure"
 version = "0.1.0"
+source = "git+https://github.com/scfmod/medal.git#ab6f83155ec030063df351a36256ffcee100274c"
 dependencies = [
  "array_tool",
  "ast",

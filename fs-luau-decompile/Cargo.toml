@@ -12,5 +12,5 @@ nom = "7.1.3"
 nom-leb128 = "0.2.0"
 regex = "1.11.1"
 rayon = "1.11.0"
-luau-lifter = { path = "../medal/luau-lifter" }
+luau-lifter = { git = "https://github.com/scfmod/medal.git" }
 gar-lib = { git = "https://github.com/Paint-a-Farm/gar-lib.git" }
