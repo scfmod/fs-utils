@@ -20,14 +20,14 @@ pub trait BufferExtension {
     fn read_from_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>>;
     fn write_to_file<P: AsRef<Path>>(&self, file: P) -> Result<()>;
 
-    fn find_bytes(&self, bytes: &Vec<u8>) -> Option<usize>;
-    fn find_bytes_from(&self, bytes: &Vec<u8>, offset: usize) -> Option<usize>;
-    fn replace_bytes(&mut self, bytes: &Vec<u8>, offset: usize);
-    fn find_and_replace(&mut self, find: &Vec<u8>, replace: &Vec<u8>, offset: usize);
+    fn find_bytes(&self, bytes: &[u8]) -> Option<usize>;
+    fn find_bytes_from(&self, bytes: &[u8], offset: usize) -> Option<usize>;
+    fn replace_bytes(&mut self, bytes: &[u8], offset: usize);
+    fn find_and_replace(&mut self, find: &[u8], replace: &[u8], offset: usize);
     fn find_and_replace_string(&mut self, find: &str, replace: &str, offset: usize);
 
-    fn shift_bytes(&mut self, table: &Vec<u8>, offset: usize, mask: usize);
-    fn shift_bytes_reversed(&mut self, bytes: &Vec<u8>, offset: usize, mask: usize);
+    fn shift_bytes(&mut self, table: &[u8], offset: usize, mask: usize);
+    fn shift_bytes_reversed(&mut self, bytes: &[u8], offset: usize, mask: usize);
 }
 
 impl BufferExtension for Vec<u8> {
@@ -108,21 +108,22 @@ impl BufferExtension for Vec<u8> {
         Ok(std::fs::write(file, &self)?)
     }
 
-    fn find_bytes(&self, bytes: &Vec<u8>) -> Option<usize> {
+    fn find_bytes(&self, bytes: &[u8]) -> Option<usize> {
         self.windows(bytes.len()).position(|window| window == bytes)
     }
 
-    fn find_bytes_from(&self, bytes: &Vec<u8>, offset: usize) -> Option<usize> {
-        self[offset..].to_vec().find_bytes(&bytes)
+    fn find_bytes_from(&self, bytes: &[u8], offset: usize) -> Option<usize> {
+        self[offset..]
+            .windows(bytes.len())
+            .position(|window| window == bytes)
+            .map(|pos| pos + offset)
     }
 
-    fn replace_bytes(&mut self, bytes: &Vec<u8>, offset: usize) {
-        for i in 0..bytes.len() {
-            self[i + offset] = bytes[i];
-        }
+    fn replace_bytes(&mut self, bytes: &[u8], offset: usize) {
+        self[offset..offset + bytes.len()].copy_from_slice(bytes);
     }
 
-    fn shift_bytes(&mut self, table: &Vec<u8>, offset: usize, mask: usize) {
+    fn shift_bytes(&mut self, table: &[u8], offset: usize, mask: usize) {
         for i in offset..self.len() {
             let value = self[i];
             let bytecode = table[i & mask];
@@ -131,7 +132,7 @@ impl BufferExtension for Vec<u8> {
         }
     }
 
-    fn shift_bytes_reversed(&mut self, bytes: &Vec<u8>, offset: usize, mask: usize) {
+    fn shift_bytes_reversed(&mut self, bytes: &[u8], offset: usize, mask: usize) {
         for i in offset..self.len() {
             let value = self[i];
             let bytecode = bytes[i & mask];
@@ -140,12 +141,12 @@ impl BufferExtension for Vec<u8> {
         }
     }
 
-    fn find_and_replace(&mut self, find: &Vec<u8>, replace: &Vec<u8>, offset: usize) {
+    fn find_and_replace(&mut self, find: &[u8], replace: &[u8], offset: usize) {
         let mut i = offset;
 
         while i <= self.len() - find.len() {
             if self[i..i + find.len()] == *find {
-                self.splice(i..i + find.len(), replace.clone());
+                self.splice(i..i + find.len(), replace.iter().copied());
                 i += replace.len();
             } else {
                 i += 1;
