@@ -17,7 +17,12 @@ Options:
   -r, --recursive   recursive mode if folder input
   -s, --silent      suppress output
   -d, --decode-only only decode files
+  -l, --function-line-info
+                    include line number info for functions when applicable
   --num-threads     set thread pool size when processing folders (0 = auto)
+  -c, --indent-char indentation character (space, tab)
+  -i, --indent-size indentation size for spaces
+  --help, help      display usage information
 ```
 
 Decode and decompile Luau bytecode files (FS25). Embeds the [medal](https://github.com/scfmod/medal) decompiler.
@@ -107,7 +112,7 @@ cargo build --release -p fs-shapes-unlock
 ## fs-unpack
 
 ```
-Usage: fs-unpack.exe <input> <output_path> [-s]
+Usage: fs-unpack <input> <output_path> [-s]
 
 Extract .gar/.dlc archive
 
@@ -130,7 +135,7 @@ cargo build --release -p fs-unpack
 ## fs-xml-format
 
 ```
-Usage: fs-xml-format.exe <input> [<output>] [-r] [-s] [-c <indent-char>] [-i <indent-size>] [-e]
+Usage: fs-xml-format <input> [<output>] [-r] [-s] [-c <indent-char>] [-i <indent-size>] [-e]
 
 Parse XML and output sane formatted XML.
 
