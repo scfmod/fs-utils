@@ -5,7 +5,7 @@ A collection of command line tools used internally, cleaned up and refactored fo
 ## fs-luau-decompile
 
 ```
-Usage: fs-luau-decompile.exe <input> [<output>] [-r] [-s] [-d] [-l] [--num-threads <num-threads>] [-c <indent-char>] [-i <indent-size>]
+Usage: fs-luau-decompile <input> [<output>] [-r] [-s] [-d] [-l] [--num-threads <num-threads>] [-c <indent-char>] [-i <indent-size>]
 
 Decode and decompile Luau .l64 bytecode files
 
