@@ -25,6 +25,10 @@ pub struct Cmd {
     #[argh(switch, short = 'd')]
     decode_only: bool,
 
+    /// include line number info for functions when applicable
+    #[argh(switch, short = 'l')]
+    function_line_info: bool,
+
     /// set thread pool size when processing folders (0 = auto)
     #[argh(option, default = "0")]
     num_threads: u8,
@@ -64,7 +68,7 @@ fn decode_bytecode(buffer: &mut Vec<u8>, version: u8, is_dlc: bool) -> Result<()
     Ok(())
 }
 
-fn decompile_bytecode(bytecode: &mut Vec<u8>) -> Result<Vec<u8>> {
+fn decompile_bytecode(bytecode: &mut Vec<u8>, write_function_line_info: bool) -> Result<Vec<u8>> {
     let (version, is_encoded, is_dlc) = get_bytecode_info(&bytecode);
 
     if version == 0 {
@@ -75,15 +79,17 @@ fn decompile_bytecode(bytecode: &mut Vec<u8>) -> Result<Vec<u8>> {
         decode_bytecode(bytecode, version, is_dlc)?;
     }
 
-    Ok(luau_lifter::decompile_bytecode(&bytecode, 1)
-        .as_bytes()
-        .to_vec())
+    Ok(
+        luau_lifter::decompile_bytecode_with_opts(&bytecode, 1, write_function_line_info)
+            .as_bytes()
+            .to_vec(),
+    )
 }
 
-fn decompile_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>> {
+fn decompile_file<P: AsRef<Path>>(file: P, write_function_line_info: bool) -> Result<Vec<u8>> {
     let mut bytecode = Vec::read_from_file(&file)?;
 
-    match decompile_bytecode(&mut bytecode) {
+    match decompile_bytecode(&mut bytecode, write_function_line_info) {
         Ok(result) => Ok(result),
         Err(e) => bail!("{}: {}", file.as_ref().display(), e),
     }
@@ -105,12 +111,16 @@ fn decode_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>> {
     Ok(bytecode)
 }
 
-fn decompile_from_archive(archive: &GarArchive, path: &str) -> Result<Vec<u8>> {
+fn decompile_from_archive(
+    archive: &GarArchive,
+    path: &str,
+    write_function_line_info: bool,
+) -> Result<Vec<u8>> {
     let mut bytecode = archive
         .read_file(path)
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    match decompile_bytecode(&mut bytecode) {
+    match decompile_bytecode(&mut bytecode, write_function_line_info) {
         Ok(result) => Ok(result),
         Err(e) => bail!("{}: {}", path, e),
     }
@@ -148,11 +158,8 @@ fn main() -> Result<()> {
     match GarPath::parse(&cli.input) {
         GarPath::Filesystem(path) => {
             if path.is_file() {
-                let mut output_file: PathBuf = cli
-                    .output
-                    .unwrap_or(path.clone())
-                    .components()
-                    .collect();
+                let mut output_file: PathBuf =
+                    cli.output.unwrap_or(path.clone()).components().collect();
 
                 let result = match cli.decode_only {
                     false => {
@@ -160,7 +167,7 @@ fn main() -> Result<()> {
                             output_file.set_extension("lua");
                         }
 
-                        decompile_file(&path)?
+                        decompile_file(&path, cli.function_line_info)?
                     }
                     true => decode_file(&path)?,
                 };
@@ -206,7 +213,7 @@ fn main() -> Result<()> {
                                 output_file.set_extension("lua");
                             }
 
-                            decompile_file(&file)?
+                            decompile_file(&file, cli.function_line_info)?
                         }
                         true => decode_file(&file)?,
                     };
@@ -231,8 +238,7 @@ fn main() -> Result<()> {
             archive_path,
             internal_path,
         } => {
-            let archive = GarArchive::open(&archive_path)
-                .map_err(|e| anyhow::anyhow!("{}", e))?;
+            let archive = GarArchive::open(&archive_path).map_err(|e| anyhow::anyhow!("{}", e))?;
             let base = internal_path.as_deref().unwrap_or("");
             let output_path = cli.output.unwrap_or_else(|| PathBuf::from("."));
 
@@ -246,7 +252,7 @@ fn main() -> Result<()> {
                 let result = if cli.decode_only {
                     decode_from_archive(&archive, base)?
                 } else {
-                    decompile_from_archive(&archive, base)?
+                    decompile_from_archive(&archive, base, cli.function_line_info)?
                 };
 
                 let filename = Path::new(base).file_name().unwrap();
@@ -272,10 +278,13 @@ fn main() -> Result<()> {
                     let result = if cli.decode_only {
                         decode_from_archive(&archive, file)?
                     } else {
-                        decompile_from_archive(&archive, file)?
+                        decompile_from_archive(&archive, file, cli.function_line_info)?
                     };
 
-                    let rel_path = file.strip_prefix(base).unwrap_or(file).trim_start_matches('/');
+                    let rel_path = file
+                        .strip_prefix(base)
+                        .unwrap_or(file)
+                        .trim_start_matches('/');
                     let mut out_file = output_path.join(rel_path);
                     if !cli.decode_only {
                         out_file.set_extension("lua");
