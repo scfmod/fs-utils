@@ -1,5 +1,6 @@
 use anyhow::{Result, bail};
 use argh::FromArgs;
+use ast::formatter::IndentationMode;
 use fs_lib::{
     LUAU_DECODE_TABLES, buffer::BufferExtension, list_files_with_extension, path::PathExtension,
 };
@@ -79,11 +80,14 @@ fn decompile_bytecode(bytecode: &mut Vec<u8>, write_function_line_info: bool) ->
         decode_bytecode(bytecode, version, is_dlc)?;
     }
 
-    Ok(
-        luau_lifter::decompile_bytecode_with_opts(&bytecode, 1, write_function_line_info)
-            .as_bytes()
-            .to_vec(),
+    Ok(luau_lifter::decompile_bytecode_with_opts(
+        &bytecode,
+        1,
+        write_function_line_info,
+        IndentationMode::default(),
     )
+    .as_bytes()
+    .to_vec())
 }
 
 fn decompile_file<P: AsRef<Path>>(file: P, write_function_line_info: bool) -> Result<Vec<u8>> {
