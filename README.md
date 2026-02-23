@@ -40,6 +40,14 @@ fs-luau-decompile -r dataS.gar/scripts/vehicles/ ./output/
 fs-luau-decompile -r dataS.gar ./output/
 ```
 
+```sh
+cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [--num-threads <n>]
+```
+
+```sh
+cargo build --release -p fs-luau-decompile
+```
+
 ### Using Lantern
 
 [Lantern](https://github.com/Paint-a-Farm/lantern) is an alternative decompiler with improved variable recovery and fewer output artifacts. It can be enabled as an optional feature:
@@ -57,12 +65,13 @@ fs-luau-decompile --lantern -r dataS.gar/scripts/ ./output/
 
 Without the `lantern` feature, the `--lantern` flag will print an error. The default behavior (medal) is unchanged.
 
-```sh
-cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [--num-threads <n>]
-```
 
-```sh
-cargo build --release -p fs-luau-decompile
+
+
+
+NOTE: To update lantern to latest commit when updated
+```
+cargo update -p lantern
 ```
 
 ## fs-luajit-decompile
