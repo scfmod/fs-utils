@@ -63,6 +63,10 @@ pub struct Cmd {
     #[argh(option, short = 'i', default = "4")]
     indent_size: u8,
 
+    /// use lantern decompiler instead of medal
+    #[argh(switch)]
+    lantern: bool,
+
     /// path to input file/folder
     #[argh(positional)]
     input: PathBuf,
@@ -102,6 +106,7 @@ fn decompile_bytecode(
     bytecode: &mut Vec<u8>,
     write_function_line_info: bool,
     indent_mode: &IndentationMode,
+    use_lantern: bool,
 ) -> Result<Vec<u8>> {
     let (version, is_encoded, is_dlc) = get_bytecode_info(&bytecode);
 
@@ -111,6 +116,17 @@ fn decompile_bytecode(
 
     if is_encoded {
         decode_bytecode(bytecode, version, is_dlc)?;
+    }
+
+    if use_lantern {
+        #[cfg(feature = "lantern")]
+        {
+            return Ok(lantern::decompile_bytecode(&bytecode, 1)
+                .as_bytes()
+                .to_vec());
+        }
+        #[cfg(not(feature = "lantern"))]
+        bail!("--lantern requires building with --features lantern");
     }
 
     Ok(luau_lifter::decompile_bytecode_with_opts(
@@ -127,10 +143,11 @@ fn decompile_file<P: AsRef<Path>>(
     file: P,
     write_function_line_info: bool,
     indent_mode: &IndentationMode,
+    use_lantern: bool,
 ) -> Result<Vec<u8>> {
     let mut bytecode = Vec::read_from_file(&file)?;
 
-    match decompile_bytecode(&mut bytecode, write_function_line_info, indent_mode) {
+    match decompile_bytecode(&mut bytecode, write_function_line_info, indent_mode, use_lantern) {
         Ok(result) => Ok(result),
         Err(e) => bail!("{}: {}", file.as_ref().display(), e),
     }
@@ -157,12 +174,13 @@ fn decompile_from_archive(
     path: &str,
     write_function_line_info: bool,
     indent_mode: &IndentationMode,
+    use_lantern: bool,
 ) -> Result<Vec<u8>> {
     let mut bytecode = archive
         .read_file(path)
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    match decompile_bytecode(&mut bytecode, write_function_line_info, indent_mode) {
+    match decompile_bytecode(&mut bytecode, write_function_line_info, indent_mode, use_lantern) {
         Ok(result) => Ok(result),
         Err(e) => bail!("{}: {}", path, e),
     }
@@ -214,7 +232,7 @@ fn main() -> Result<()> {
                             output_file.set_extension("lua");
                         }
 
-                        decompile_file(&path, cli.function_line_info, &indent_mode)?
+                        decompile_file(&path, cli.function_line_info, &indent_mode, cli.lantern)?
                     }
                     true => decode_file(&path)?,
                 };
@@ -260,7 +278,7 @@ fn main() -> Result<()> {
                                 output_file.set_extension("lua");
                             }
 
-                            decompile_file(&file, cli.function_line_info, &indent_mode)?
+                            decompile_file(&file, cli.function_line_info, &indent_mode, cli.lantern)?
                         }
                         true => decode_file(&file)?,
                     };
@@ -299,7 +317,7 @@ fn main() -> Result<()> {
                 let result = if cli.decode_only {
                     decode_from_archive(&archive, base)?
                 } else {
-                    decompile_from_archive(&archive, base, cli.function_line_info, &indent_mode)?
+                    decompile_from_archive(&archive, base, cli.function_line_info, &indent_mode, cli.lantern)?
                 };
 
                 let filename = Path::new(base).file_name().unwrap();
@@ -330,6 +348,7 @@ fn main() -> Result<()> {
                             file,
                             cli.function_line_info,
                             &indent_mode,
+                            cli.lantern,
                         )?
                     };
 
