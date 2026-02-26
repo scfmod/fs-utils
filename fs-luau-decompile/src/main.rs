@@ -255,6 +255,7 @@ fn main() -> Result<()> {
 
                 ThreadPoolBuilder::new()
                     .num_threads(cli.num_threads.into())
+                    .stack_size(32 * 1024 * 1024)
                     .build_global()
                     .unwrap();
 
@@ -309,6 +310,7 @@ fn main() -> Result<()> {
 
             ThreadPoolBuilder::new()
                 .num_threads(cli.num_threads.into())
+                .stack_size(32 * 1024 * 1024)
                 .build_global()
                 .unwrap();
 
