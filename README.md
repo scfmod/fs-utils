@@ -1,6 +1,6 @@
 A collection of command line tools used internally, cleaned up and refactored for public release. Use at own risk.
 
-
+Requires [Rust/Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) to build.
 
 ## fs-luau-decompile
 
