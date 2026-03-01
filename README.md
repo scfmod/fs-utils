@@ -1,11 +1,11 @@
 A collection of command line tools used internally, cleaned up and refactored for public release. Use at own risk.
 
-
+Requires [Rust/Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) to build.
 
 ## fs-luau-decompile
 
 ```
-Usage: fs-luau-decompile <input> [<output>] [-r] [-s] [-d] [-l] [--lantern] [--num-threads <num-threads>] [-c <indent-char>] [-i <indent-size>]
+Usage: fs-luau-decompile <input> [<output>] [-r] [-s] [-d] [--num-threads <num-threads>]
 
 Decode and decompile Luau .l64 bytecode files
 
@@ -17,16 +17,11 @@ Options:
   -r, --recursive   recursive mode if folder input
   -s, --silent      suppress output
   -d, --decode-only only decode files
-  -l, --function-line-info
-                    include line number info for functions when applicable
-  --lantern         use lantern decompiler instead of medal (requires --features lantern)
   --num-threads     set thread pool size when processing folders (0 = auto)
-  -c, --indent-char indentation character (space, tab)
-  -i, --indent-size indentation size for spaces
   --help, help      display usage information
 ```
 
-Decode and decompile Luau bytecode files (FS25). Embeds the [medal](https://github.com/scfmod/medal) decompiler by default.
+Decode and decompile Luau bytecode files (FS25). Uses the [Lantern](https://github.com/Paint-a-Farm/lantern) decompiler.
 
 Supports reading directly from GAR/DLC archives:
 ```sh
@@ -48,28 +43,8 @@ cargo run -p fs-luau-decompile -- <input> [<output>] [-r] [-s] [-d] [--num-threa
 cargo build --release -p fs-luau-decompile
 ```
 
-### Using Lantern
+NOTE: To update lantern to latest commit when updated:
 
-[Lantern](https://github.com/Paint-a-Farm/lantern) is an alternative decompiler with improved variable recovery and fewer output artifacts. It can be enabled as an optional feature:
-
-```sh
-# Build with lantern support
-cargo build --release -p fs-luau-decompile --features lantern
-
-# Use lantern instead of medal
-fs-luau-decompile --lantern scripts/main.l64
-
-# Batch decompile with lantern
-fs-luau-decompile --lantern -r dataS.gar/scripts/ ./output/
-```
-
-Without the `lantern` feature, the `--lantern` flag will print an error. The default behavior (medal) is unchanged.
-
-
-
-
-
-NOTE: To update lantern to latest commit when updated
 ```
 cargo update -p lantern
 ```

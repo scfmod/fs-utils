@@ -1,6 +1,5 @@
 use anyhow::{Result, bail};
 use argh::FromArgs;
-use ast::formatter::IndentationMode;
 use fs_lib::{
     LUAU_DECODE_TABLES, buffer::BufferExtension, list_files_with_extension, path::PathExtension,
 };
@@ -9,28 +8,7 @@ use rayon::{
     ThreadPoolBuilder,
     iter::{IntoParallelIterator, ParallelIterator},
 };
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-enum Indent {
-    Space,
-    Tab,
-}
-
-impl FromStr for Indent {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s {
-            "space" => Ok(Indent::Space),
-            "tab" => Ok(Indent::Tab),
-            _ => Err(format!("Unknown indent character enum: {}", s)),
-        }
-    }
-}
+use std::path::{Path, PathBuf};
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Decode and decompile Luau .l64 bytecode files
@@ -47,25 +25,9 @@ pub struct Cmd {
     #[argh(switch, short = 'd')]
     decode_only: bool,
 
-    /// include line number info for functions when applicable
-    #[argh(switch, short = 'l')]
-    function_line_info: bool,
-
     /// set thread pool size when processing folders (0 = auto)
     #[argh(option, default = "0")]
     num_threads: u8,
-
-    /// indentation character (space, tab)
-    #[argh(option, short = 'c', default = "Indent::Tab")]
-    indent_char: Indent,
-
-    /// indentation size for spaces
-    #[argh(option, short = 'i', default = "4")]
-    indent_size: u8,
-
-    /// use lantern decompiler instead of medal
-    #[argh(switch)]
-    lantern: bool,
 
     /// path to input file/folder
     #[argh(positional)]
@@ -102,12 +64,7 @@ fn decode_bytecode(buffer: &mut Vec<u8>, version: u8, is_dlc: bool) -> Result<()
     Ok(())
 }
 
-fn decompile_bytecode(
-    bytecode: &mut Vec<u8>,
-    write_function_line_info: bool,
-    indent_mode: &IndentationMode,
-    use_lantern: bool,
-) -> Result<Vec<u8>> {
+fn decompile_bytecode(bytecode: &mut Vec<u8>) -> Result<Vec<u8>> {
     let (version, is_encoded, is_dlc) = get_bytecode_info(&bytecode);
 
     if version == 0 {
@@ -118,36 +75,15 @@ fn decompile_bytecode(
         decode_bytecode(bytecode, version, is_dlc)?;
     }
 
-    if use_lantern {
-        #[cfg(feature = "lantern")]
-        {
-            return Ok(lantern::decompile_bytecode(&bytecode, 1)
-                .as_bytes()
-                .to_vec());
-        }
-        #[cfg(not(feature = "lantern"))]
-        bail!("--lantern requires building with --features lantern");
-    }
-
-    Ok(luau_lifter::decompile_bytecode_with_opts(
-        &bytecode,
-        1,
-        write_function_line_info,
-        *indent_mode,
-    )
-    .as_bytes()
-    .to_vec())
+    Ok(lantern::decompile_bytecode(&bytecode, 1)
+        .as_bytes()
+        .to_vec())
 }
 
-fn decompile_file<P: AsRef<Path>>(
-    file: P,
-    write_function_line_info: bool,
-    indent_mode: &IndentationMode,
-    use_lantern: bool,
-) -> Result<Vec<u8>> {
+fn decompile_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>> {
     let mut bytecode = Vec::read_from_file(&file)?;
 
-    match decompile_bytecode(&mut bytecode, write_function_line_info, indent_mode, use_lantern) {
+    match decompile_bytecode(&mut bytecode) {
         Ok(result) => Ok(result),
         Err(e) => bail!("{}: {}", file.as_ref().display(), e),
     }
@@ -169,18 +105,12 @@ fn decode_file<P: AsRef<Path>>(file: P) -> Result<Vec<u8>> {
     Ok(bytecode)
 }
 
-fn decompile_from_archive(
-    archive: &GarArchive,
-    path: &str,
-    write_function_line_info: bool,
-    indent_mode: &IndentationMode,
-    use_lantern: bool,
-) -> Result<Vec<u8>> {
+fn decompile_from_archive(archive: &GarArchive, path: &str) -> Result<Vec<u8>> {
     let mut bytecode = archive
         .read_file(path)
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    match decompile_bytecode(&mut bytecode, write_function_line_info, indent_mode, use_lantern) {
+    match decompile_bytecode(&mut bytecode) {
         Ok(result) => Ok(result),
         Err(e) => bail!("{}: {}", path, e),
     }
@@ -204,21 +134,8 @@ fn decode_from_archive(archive: &GarArchive, path: &str) -> Result<Vec<u8>> {
     Ok(bytecode)
 }
 
-fn list_l64_files<'a>(archive: &'a GarArchive, base: &str, recursive: bool) -> Vec<&'a str> {
-    archive
-        .files_with_extension(base, "l64", recursive)
-        .into_iter()
-        .filter(|f| !f.contains("XMLSchema.l64"))
-        .collect()
-}
-
 fn main() -> Result<()> {
     let cli: Cmd = argh::from_env();
-
-    let indent_mode: IndentationMode = match cli.indent_char {
-        Indent::Space => IndentationMode::Spaces(cli.indent_size),
-        Indent::Tab => IndentationMode::Tab,
-    };
 
     match GarPath::parse(&cli.input) {
         GarPath::Filesystem(path) => {
@@ -232,7 +149,7 @@ fn main() -> Result<()> {
                             output_file.set_extension("lua");
                         }
 
-                        decompile_file(&path, cli.function_line_info, &indent_mode, cli.lantern)?
+                        decompile_file(&path)?
                     }
                     true => decode_file(&path)?,
                 };
@@ -259,13 +176,7 @@ fn main() -> Result<()> {
                     .build_global()
                     .unwrap();
 
-                let files: Vec<_> = list_files_with_extension(&path, r"l64", cli.recursive)?
-                    .into_iter()
-                    .filter(|f| {
-                        let name = f.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                        !name.contains("XMLSchema")
-                    })
-                    .collect();
+                let files: Vec<_> = list_files_with_extension(&path, r"l64", cli.recursive)?;
 
                 let iter_result = files.into_par_iter().try_for_each(|file| -> Result<()> {
                     let mut output_file: PathBuf = file
@@ -279,7 +190,7 @@ fn main() -> Result<()> {
                                 output_file.set_extension("lua");
                             }
 
-                            decompile_file(&file, cli.function_line_info, &indent_mode, cli.lantern)?
+                            decompile_file(&file)?
                         }
                         true => decode_file(&file)?,
                     };
@@ -319,7 +230,7 @@ fn main() -> Result<()> {
                 let result = if cli.decode_only {
                     decode_from_archive(&archive, base)?
                 } else {
-                    decompile_from_archive(&archive, base, cli.function_line_info, &indent_mode, cli.lantern)?
+                    decompile_from_archive(&archive, base)?
                 };
 
                 let filename = Path::new(base).file_name().unwrap();
@@ -335,7 +246,10 @@ fn main() -> Result<()> {
                 }
             } else {
                 // Directory - process multiple files
-                let files = list_l64_files(&archive, base, cli.recursive);
+                let files: Vec<&str> = archive
+                    .files_with_extension(base, "l64", cli.recursive)
+                    .into_iter()
+                    .collect();
 
                 if files.is_empty() {
                     bail!("No .l64 files found in archive path: {}", base);
@@ -345,13 +259,7 @@ fn main() -> Result<()> {
                     let result = if cli.decode_only {
                         decode_from_archive(&archive, file)?
                     } else {
-                        decompile_from_archive(
-                            &archive,
-                            file,
-                            cli.function_line_info,
-                            &indent_mode,
-                            cli.lantern,
-                        )?
+                        decompile_from_archive(&archive, file)?
                     };
 
                     let rel_path = file
