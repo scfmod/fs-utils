@@ -528,7 +528,7 @@ checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
 [[package]]
 name = "lantern"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-bytecode",
  "lantern-emit",
@@ -543,7 +543,7 @@ dependencies = [
 [[package]]
 name = "lantern-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "anyhow",
  "nom 8.0.0",
@@ -552,7 +552,7 @@ dependencies = [
 [[package]]
 name = "lantern-emit"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-bytecode",
  "lantern-hir",
@@ -563,7 +563,7 @@ dependencies = [
 [[package]]
 name = "lantern-exprs"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-hir",
  "petgraph",
@@ -573,7 +573,7 @@ dependencies = [
 [[package]]
 name = "lantern-hir"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-bytecode",
  "petgraph",
@@ -583,7 +583,7 @@ dependencies = [
 [[package]]
 name = "lantern-lift"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-bytecode",
  "lantern-hir",
@@ -594,7 +594,7 @@ dependencies = [
 [[package]]
 name = "lantern-structure"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-hir",
  "petgraph",
@@ -604,7 +604,7 @@ dependencies = [
 [[package]]
 name = "lantern-vars"
 version = "0.1.0"
-source = "git+https://github.com/Paint-a-Farm/lantern.git#eef391999aaba9d206bef76dfe21fdca686a9977"
+source = "git+https://github.com/Paint-a-Farm/lantern.git#b019f839cc16890ef418ee8211c06e5ad97134f1"
 dependencies = [
  "lantern-bytecode",
  "lantern-hir",
