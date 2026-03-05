@@ -38,7 +38,8 @@ fn is_valid(buffer: &Vec<u8>) -> bool {
 }
 
 fn is_encoded(buffer: &Vec<u8>) -> bool {
-    buffer[4] == 0xFC
+    // Check if version byte (buffer[3]) has a decode table
+    LUAJIT_DECODE_TABLES.contains_key(&buffer[3])
 }
 
 fn decode(buffer: &mut Vec<u8>) -> Result<()> {
