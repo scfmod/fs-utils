@@ -38,7 +38,7 @@ fn is_valid(buffer: &Vec<u8>) -> bool {
 }
 
 fn is_encoded(buffer: &Vec<u8>) -> bool {
-    buffer[4] == 0xFC
+    buffer[4] == 0xFC || buffer[4] == 0xFB
 }
 
 fn decode(buffer: &mut Vec<u8>) -> Result<()> {
