@@ -49,7 +49,7 @@ fn scan_executable<P: AsRef<Path>>(file: P) -> Result<()> {
         for item in items.iter() {
             if let Some(offset) = file_buffer.find_bytes(&item.find) {
                 println!("[+] {:?}", item.patch_type);
-                println!("    offset: {}", offset);
+                println!("    offset: {} ({:#x})", offset, offset);
                 println!("    expect: {}", item.find.to_hex_string());
                 println!("    replace: {}", item.replace.to_hex_string());
             } else {
