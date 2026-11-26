@@ -87,6 +87,10 @@ fn format_xml_file<P: AsRef<Path>>(
         .coalesce_characters(false)
         .create_reader(input);
 
+    if let Some(parent) = output_file.as_ref().parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
     let output = File::create(output_file)?;
     let writer = BufWriter::new(output);
 
